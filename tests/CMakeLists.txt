@@ -15,8 +15,8 @@ target_compile_definitions(treelang_tests PRIVATE TREELANG_BUILD_TESTS)
 include(${doctest_SOURCE_DIR}/scripts/cmake/doctest.cmake)
 doctest_discover_tests(treelang_tests)
 
-add_executable(core_matrix_tests core/matrix_test.cpp)
+add_executable(core_matrix_tests test_main.cpp core/matrix_test.cpp)
 
-target_link_libraries(core_matrix_tests PRIVATE treelang_core)
+target_link_libraries(core_matrix_tests PRIVATE treelang_core doctest)
 
-add_test(NAME core_matrix_tests COMMAND core_matrix_tests)
+doctest_discover_tests(core_matrix_tests)
