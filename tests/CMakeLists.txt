@@ -20,3 +20,9 @@ add_executable(core_matrix_tests test_main.cpp core/matrix_test.cpp)
 target_link_libraries(core_matrix_tests PRIVATE treelang_core doctest)
 
 doctest_discover_tests(core_matrix_tests)
+
+add_executable(core_tests test_main.cpp core/core_test.cpp)
+
+target_link_libraries(core_tests PRIVATE treelang_core doctest)
+
+doctest_discover_tests(core_tests)
