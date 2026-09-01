@@ -26,3 +26,9 @@ add_executable(core_tests test_main.cpp core/core_test.cpp)
 target_link_libraries(core_tests PRIVATE treelang_core doctest)
 
 doctest_discover_tests(core_tests)
+
+add_executable(model_tests test_main.cpp model/model_test.cpp)
+
+target_link_libraries(model_tests PRIVATE treelang_model doctest)
+
+doctest_discover_tests(model_tests)

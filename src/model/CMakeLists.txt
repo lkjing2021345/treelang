@@ -1,0 +1,3 @@
+add_library(treelang_model INTERFACE)
+
+target_link_libraries(treelang_model INTERFACE treelang_core)
