@@ -50,3 +50,9 @@ add_executable(achieve_tests test_main.cpp achieve/achieve_test.cpp)
 target_link_libraries(achieve_tests PRIVATE treelang_achieve doctest)
 
 doctest_discover_tests(achieve_tests)
+
+add_executable(save_tests test_main.cpp save/save_test.cpp)
+
+target_link_libraries(save_tests PRIVATE treelang_save doctest)
+
+doctest_discover_tests(save_tests)

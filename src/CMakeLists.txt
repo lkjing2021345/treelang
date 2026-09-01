@@ -6,6 +6,7 @@ add_subdirectory(model)
 add_subdirectory(combat)
 add_subdirectory(world)
 add_subdirectory(achieve)
+add_subdirectory(save)
 
 add_executable(treelang
     main.cpp
