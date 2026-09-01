@@ -1,4 +1,17 @@
 .cache/
 .vscode/
 .idea/
+.gitignore
+.gitignore
+AGENTS.md
+.idea/
+.slim/
+.omo/
+
 build/
+
+# agent / tooling runtime state
+.slim/
+.omo/
+doc/
+AGENTS.md
