@@ -44,3 +44,9 @@ add_executable(world_tests test_main.cpp world/world_test.cpp)
 target_link_libraries(world_tests PRIVATE treelang_world doctest)
 
 doctest_discover_tests(world_tests)
+
+add_executable(achieve_tests test_main.cpp achieve/achieve_test.cpp)
+
+target_link_libraries(achieve_tests PRIVATE treelang_achieve doctest)
+
+doctest_discover_tests(achieve_tests)
