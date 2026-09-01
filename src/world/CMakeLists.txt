@@ -1,0 +1,3 @@
+add_library(treelang_world INTERFACE)
+
+target_link_libraries(treelang_world INTERFACE treelang_core treelang_model pjh_result)

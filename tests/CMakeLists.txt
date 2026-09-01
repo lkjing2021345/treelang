@@ -38,3 +38,9 @@ add_executable(combat_tests test_main.cpp combat/combat_test.cpp)
 target_link_libraries(combat_tests PRIVATE treelang_combat doctest)
 
 doctest_discover_tests(combat_tests)
+
+add_executable(world_tests test_main.cpp world/world_test.cpp)
+
+target_link_libraries(world_tests PRIVATE treelang_world doctest)
+
+doctest_discover_tests(world_tests)
