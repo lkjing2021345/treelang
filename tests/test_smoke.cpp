@@ -1,2 +1,6 @@
-#include <iostream>
-int main() { std::cout << "Hello Tree Lang Test!"; }
+#include <doctest/doctest.h>
+
+TEST_CASE("treelang smoke test")
+{
+    CHECK(1 + 1 == 2);
+}
