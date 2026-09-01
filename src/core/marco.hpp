@@ -44,5 +44,31 @@ public:                                           \
     ;                           \
     inline name##Builder name::create() { return {}; }
 
+#define INSTANCE_CLASS(name)                                             \
+    class name##Instance                                                 \
+    {                                                                    \
+    private:                                                             \
+        name m_data;                                                     \
+                                                                         \
+    public:                                                              \
+        static name##Instance &instance()                                \
+        {                                                                \
+            static name##Instance instance;                              \
+            return instance;                                             \
+        }                                                                \
+                                                                         \
+    private:                                                             \
+        name##Instance() = default;                                      \
+                                                                         \
+    public:                                                              \
+        name##Instance(const name##Instance &) = delete;                 \
+        name##Instance(name##Instance &&) noexcept = default;            \
+        name##Instance &operator=(const name##Instance &) = delete;      \
+        name##Instance &operator=(name##Instance &&) noexcept = default; \
+                                                                         \
+    public:                                                              \
+        name &data() noexcept { return m_data; }                         \
+        const name &data() const noexcept { return m_data; }             \
+    };
 
 #endif  // INCLUDE_TREELANG_CORE_MARCO_HPP
