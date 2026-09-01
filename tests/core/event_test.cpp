@@ -33,24 +33,23 @@ namespace
     };
 }
 
-TEST_CASE("event: default sequence and round-trip")
+TEST_CASE("event: default sequence is zero")
 {
     Event e;
     CHECK(e.get_sequence() == 0);
-
-    e.set_sequence(42);
-    CHECK(e.get_sequence() == 42);
 }
 
 TEST_CASE("event: derived event overrides tag and works via base pointer")
 {
     auto cast = std::make_shared<SpellCastEvent>();
     cast->spell_id = "fireball";
-    cast->set_sequence(7);
+
+    EventBus bus;
+    bus.publish(cast);  // 序号仅能由总线写入
 
     const Event *base = cast.get();
     CHECK(base->type_tag() == "SpellCastEvent");
-    CHECK(base->get_sequence() == 7);
+    CHECK(base->get_sequence() == 1);
 }
 
 TEST_CASE("event: derived event without override inherits base tag")

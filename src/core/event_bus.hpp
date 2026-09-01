@@ -44,7 +44,9 @@ namespace treelang
         }
 
         template <typename U>
-            requires(std::is_base_of_v<T, U> && requires(T &t) { t.set_sequence(std::uint64_t{}); })
+            requires(
+                std::is_base_of_v<T, U> &&
+                requires(T &t) { t.set_sequence(std::uint64_t{}); })
         void publish(const std::shared_ptr<U> &event)
         {
             event->set_sequence(++m_sequence);
