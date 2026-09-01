@@ -2,7 +2,6 @@
 .vscode/
 .idea/
 .gitignore
-.gitignore
 AGENTS.md
 .idea/
 .slim/
@@ -15,3 +14,4 @@ build/
 .omo/
 doc/
 AGENTS.md
+build/
