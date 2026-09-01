@@ -16,6 +16,12 @@ namespace treelang
     /** 地图规格：5×5 网格 */
     inline constexpr std::size_t kMapSize = 5;
 
+    /** 中央初始房的行下标 */
+    inline constexpr std::size_t kCenterRow = kMapSize / 2;
+
+    /** 中央初始房的列下标 */
+    inline constexpr std::size_t kCenterCol = kMapSize / 2;
+
     /** 理智值范围下界 */
     inline constexpr int kSanMin = 0;
 

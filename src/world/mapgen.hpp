@@ -34,15 +34,6 @@
 
 namespace treelang
 {
-    /** 中央初始房的行下标 */
-    inline constexpr std::size_t kCenterRow = kMapSize / 2;
-
-    /** 中央初始房的列下标 */
-    inline constexpr std::size_t kCenterCol = kMapSize / 2;
-
-    /** 一层楼的地图网格：5×5 的房间矩阵 */
-    using MapGrid = Matrix<Room, kMapSize, kMapSize>;
-
     /**
      * @brief 地图生成错误。
      */

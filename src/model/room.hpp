@@ -8,6 +8,7 @@
 
 #include <vector>
 
+#include "core/matrix.hpp"
 #include "core/types.hpp"
 #include "entity.hpp"
 #include "item.hpp"
@@ -38,14 +39,16 @@ namespace treelang
     /**
      * @brief 房间。
      *
-     * 5×5 网格中的一个格子，由房间类型与内容组成。网格本体由
-     * core 的 Matrix<Room, kMapSize, kMapSize> 承载（见 world 模块）。
+     * 5×5 网格中的一个格子，由房间类型与内容组成。
      */
     struct Room
     {
         RoomType type = RoomType::Start; /**< 房间类型 */
         RoomContent content;             /**< 房间内容 */
     };
+
+    /** 一层楼的地图网格：5×5 的房间矩阵 */
+    using MapGrid = Matrix<Room, kMapSize, kMapSize>;
 }
 
 #endif  // INCLUDE_TREELANG_MODEL_ROOM_HPP
