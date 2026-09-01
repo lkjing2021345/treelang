@@ -32,3 +32,9 @@ add_executable(model_tests test_main.cpp model/model_test.cpp)
 target_link_libraries(model_tests PRIVATE treelang_model doctest)
 
 doctest_discover_tests(model_tests)
+
+add_executable(combat_tests test_main.cpp combat/combat_test.cpp)
+
+target_link_libraries(combat_tests PRIVATE treelang_combat doctest)
+
+doctest_discover_tests(combat_tests)

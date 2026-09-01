@@ -20,6 +20,17 @@ namespace treelang
         Tactical,   /**< 战术道具：赋予临时属性等 */
     };
 
+/**
+     * @brief 道具使用效果。
+     *
+     * 数值与战术道具的临时属性效果待需求明确（README 标注待补充）。
+     */
+    struct ItemEffect
+    {
+        int heal_hp = 0;   /**< 使用后恢复的血量 */
+        int heal_mana = 0; /**< 使用后恢复的咒力 */
+    };
+
     /**
      * @brief 道具。
      *
@@ -28,9 +39,10 @@ namespace treelang
      */
     struct Item
     {
-        std::string name;                     /**< 名称 */
+        std::string name;                  /**< 名称 */
         ItemKind kind = ItemKind::Consumable; /**< 类型 */
-        std::string description;              /**< 描述 */
+        std::string description;           /**< 描述 */
+        ItemEffect effect;                 /**< 使用效果 */
     };
 }
 
