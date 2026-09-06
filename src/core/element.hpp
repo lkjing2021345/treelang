@@ -22,7 +22,9 @@ namespace treelang
     {
         Fire,   /**< 火 */
         Water,  /**< 水 */
-        Metal,  /**< 金 */
+        Wind,   /**< 风 */
+        Earth,  /**< 土 */
+        Light,  /**< 光 */
     };
 
     /**
@@ -39,7 +41,9 @@ namespace treelang
         {
             case Element::Fire: return "fire";
             case Element::Water: return "water";
-            case Element::Metal: return "metal";
+            case Element::Wind: return "wind";
+            case Element::Earth: return "earth";
+            case Element::Light: return "light";
         }
         return {};
     }
@@ -53,7 +57,9 @@ namespace treelang
     {
         if (id == "fire") return Element::Fire;
         if (id == "water") return Element::Water;
-        if (id == "metal") return Element::Metal;
+        if (id == "wind") return Element::Wind;
+        if (id == "earth") return Element::Earth;
+        if (id == "light") return Element::Light;
         return std::nullopt;
     }
 
@@ -68,7 +74,9 @@ namespace treelang
         {
             case Element::Fire: return "火";
             case Element::Water: return "水";
-            case Element::Metal: return "金";
+            case Element::Wind: return "风";
+            case Element::Earth: return "土";
+            case Element::Light: return "光";
         }
         return {};
     }

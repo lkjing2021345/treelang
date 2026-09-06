@@ -13,16 +13,22 @@ TEST_CASE("core: element id/name round-trip")
 {
     CHECK(treelang::element_id(Element::Fire) == "fire");
     CHECK(treelang::element_id(Element::Water) == "water");
-    CHECK(treelang::element_id(Element::Metal) == "metal");
+    CHECK(treelang::element_id(Element::Wind) == "wind");
+    CHECK(treelang::element_id(Element::Earth) == "earth");
+    CHECK(treelang::element_id(Element::Light) == "light");
 
     CHECK(treelang::element_name(Element::Fire) == "火");
     CHECK(treelang::element_name(Element::Water) == "水");
-    CHECK(treelang::element_name(Element::Metal) == "金");
+    CHECK(treelang::element_name(Element::Wind) == "风");
+    CHECK(treelang::element_name(Element::Earth) == "土");
+    CHECK(treelang::element_name(Element::Light) == "光");
 
     CHECK(treelang::element_from_id("fire") == Element::Fire);
     CHECK(treelang::element_from_id("water") == Element::Water);
-    CHECK(treelang::element_from_id("metal") == Element::Metal);
-    CHECK(!treelang::element_from_id("earth").has_value());
+    CHECK(treelang::element_from_id("wind") == Element::Wind);
+    CHECK(treelang::element_from_id("earth") == Element::Earth);
+    CHECK(treelang::element_from_id("light") == Element::Light);
+    CHECK(!treelang::element_from_id("metal").has_value());
 }
 
 TEST_CASE("core: room type / constants / element attr")
