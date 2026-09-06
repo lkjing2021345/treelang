@@ -82,6 +82,19 @@ namespace treelang
         T &data() { return m_data; }
         /** @brief 返回元素的常量引用。 */
         const T &data() const { return m_data; }
+
+    public:
+        void reset()
+            requires(std::is_default_constructible_v<T> && std::is_move_assignable_v<T>)
+        {
+            m_data = T{};
+        }
+
+        void reset(const T &val)
+            requires(std::is_copy_assignable_v<T>)
+        {
+            m_data = val;
+        }
     };
 
     /**
@@ -127,9 +140,9 @@ namespace treelang
          */
         MatrixRow(std::array<T, M> &&arr)
             requires(std::is_move_constructible_v<T>)
-            : m_data(transform_array(std::move(arr), [](T &val) {
-                  return MatrixElement<T>{std::move(val)};
-              }))
+            :
+            m_data(transform_array(
+                std::move(arr), [](T &val) { return MatrixElement<T>{std::move(val)}; }))
         {
         }
 
@@ -155,6 +168,19 @@ namespace treelang
          * @return 元素的常量引用。
          */
         const T &operator[](size_t idx) const { return m_data[idx].data(); }
+
+    public:
+        void reset()
+            requires(std::is_default_constructible_v<T> && std::is_move_assignable_v<T>)
+        {
+            for (size_t i = 0; i < M; ++i) m_data[i].reset();
+        }
+
+        void reset(const T &val)
+            requires(std::is_copy_assignable_v<T>)
+        {
+            for (size_t i = 0; i < M; ++i) m_data[i].reset(val);
+        }
     };
 
     /**
@@ -192,9 +218,9 @@ namespace treelang
          */
         Matrix(const std::array<std::array<T, M>, N> &arr)
             requires(std::is_copy_constructible_v<T>)
-            : m_rows(transform_array(arr, [](const std::array<T, M> &row) {
-                  return MatrixRow<T, M>{row};
-              }))
+            :
+            m_rows(transform_array(
+                arr, [](const std::array<T, M> &row) { return MatrixRow<T, M>{row}; }))
         {
         }
         /**
@@ -203,9 +229,10 @@ namespace treelang
          */
         Matrix(std::array<std::array<T, M>, N> &&arr)
             requires(std::is_move_constructible_v<T>)
-            : m_rows(transform_array(std::move(arr), [](std::array<T, M> &row) {
-                  return MatrixRow<T, M>{std::move(row)};
-              }))
+            :
+            m_rows(transform_array(
+                std::move(arr),
+                [](std::array<T, M> &row) { return MatrixRow<T, M>{std::move(row)}; }))
         {
         }
 
@@ -231,6 +258,18 @@ namespace treelang
          * @return 矩阵行的常量引用。
          */
         const MatrixRow<T, M> &operator[](size_t idx) const { return m_rows[idx]; }
+
+    public:
+        void reset()
+            requires(std::is_default_constructible_v<T> && std::is_move_assignable_v<T>)
+        {
+            for (size_t i = 0; i < N; ++i) m_rows[i].reset();
+        }
+        void reset(const T &val)
+            requires(std::is_copy_assignable_v<T>)
+        {
+            for (size_t i = 0; i < N; ++i) m_rows[i].reset(val);
+        }
     };
 }
 

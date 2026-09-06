@@ -1,5 +1,6 @@
 #include <array>
 #include <memory>
+#include <string>
 #include <type_traits>
 
 #include <doctest/doctest.h>
@@ -8,6 +9,12 @@
 
 using treelang::Matrix;
 using treelang::MatrixRow;
+
+template <typename MatrixT>
+concept HasDefaultReset = requires(MatrixT &m) { m.reset(); };
+
+template <typename MatrixT, typename Element>
+concept HasValueReset = requires(MatrixT &m, const Element &v) { m.reset(v); };
 
 TEST_CASE("matrix: copyable")
 {
@@ -80,4 +87,48 @@ TEST_CASE("matrix: move-only")
     static_assert(!std::is_copy_assignable_v<Matrix<std::unique_ptr<int>, 2, 2>>);
     static_assert(std::is_move_constructible_v<Matrix<std::unique_ptr<int>, 2, 2>>);
     static_assert(std::is_move_assignable_v<Matrix<std::unique_ptr<int>, 2, 2>>);
+}
+
+TEST_CASE("matrix: reset")
+{
+    Matrix<std::string, 2, 3> m;
+    m[0][0] = "a";
+    m[1][2] = "b";
+    m.reset("x");
+    for (size_t i = 0; i < 2; ++i)
+        for (size_t j = 0; j < 3; ++j) CHECK(m[i][j] == "x");
+
+    m.reset();
+    for (size_t i = 0; i < 2; ++i)
+        for (size_t j = 0; j < 3; ++j) CHECK(m[i][j].empty());
+
+    MatrixRow<std::string, 3> row;
+    row[1] = "y";
+    row.reset("z");
+    CHECK(row[0] == "z");
+    CHECK(row[1] == "z");
+    CHECK(row[2] == "z");
+    row.reset();
+    CHECK(row[0].empty());
+    CHECK(row[1].empty());
+    CHECK(row[2].empty());
+}
+
+TEST_CASE("matrix: reset move-only")
+{
+    Matrix<std::unique_ptr<int>, 2, 2> m;
+    m[0][0] = std::make_unique<int>(1);
+    m[1][1] = std::make_unique<int>(2);
+    m.reset();
+    for (size_t i = 0; i < 2; ++i)
+        for (size_t j = 0; j < 2; ++j) CHECK(m[i][j] == nullptr);
+
+    static_assert(HasDefaultReset<Matrix<int, 2, 2>>);
+    static_assert(HasValueReset<Matrix<int, 2, 2>, int>);
+    static_assert(HasDefaultReset<Matrix<std::unique_ptr<int>, 2, 2>>);
+    static_assert(!HasValueReset<Matrix<std::unique_ptr<int>, 2, 2>, std::unique_ptr<int>>);
+    static_assert(HasDefaultReset<MatrixRow<int, 3>>);
+    static_assert(HasValueReset<MatrixRow<int, 3>, int>);
+    static_assert(HasDefaultReset<MatrixRow<std::unique_ptr<int>, 3>>);
+    static_assert(!HasValueReset<MatrixRow<std::unique_ptr<int>, 3>, std::unique_ptr<int>>);
 }
