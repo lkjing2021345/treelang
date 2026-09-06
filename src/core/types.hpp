@@ -9,27 +9,29 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "direction.hpp"
 #include "element.hpp"
+#include "point.hpp"
 
 namespace treelang
 {
     /** 地图规格：5×5 网格 */
-    inline constexpr std::size_t kMapSize = 5;
+    inline constexpr std::size_t k_map_size = 5;
 
     /** 中央初始房的行下标 */
-    inline constexpr std::size_t kCenterRow = kMapSize / 2;
+    inline constexpr std::size_t k_center_row = k_map_size / 2;
 
     /** 中央初始房的列下标 */
-    inline constexpr std::size_t kCenterCol = kMapSize / 2;
+    inline constexpr std::size_t k_center_col = k_map_size / 2;
 
     /** 理智值范围下界 */
-    inline constexpr int kSanMin = 0;
+    inline constexpr int k_san_min = 0;
 
     /** 理智值范围上界 */
-    inline constexpr int kSanMax = 100;
+    inline constexpr int k_san_max = 100;
 
     /** S.P.E.C.I.A.L. 属性点上限 */
-    inline constexpr int kAttributeCap = 20;
+    inline constexpr int k_attribute_cap = 20;
 
     /**
      * @brief 术式属性条目：元素 + 属性等级。
@@ -50,6 +52,9 @@ namespace treelang
         Function, /**< 功能房（术式融合） */
         Elite,    /**< 精英怪房 */
         Story,    /**< 剧情房 */
+        Enemy,    /**< 普通敌人房 */
+        Exit,     /**< 出口/楼梯房（下一层入口） */
+        Empty,    /**< 空房（无特殊内容） */
     };
 }
 

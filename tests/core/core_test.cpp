@@ -27,10 +27,10 @@ TEST_CASE("core: element id/name round-trip")
 
 TEST_CASE("core: room type / constants / element attr")
 {
-    CHECK(treelang::kMapSize == 5);
-    CHECK(treelang::kSanMin == 0);
-    CHECK(treelang::kSanMax == 100);
-    CHECK(treelang::kAttributeCap == 20);
+    CHECK(treelang::k_map_size == 5);
+    CHECK(treelang::k_san_min == 0);
+    CHECK(treelang::k_san_max == 100);
+    CHECK(treelang::k_attribute_cap == 20);
 
     ElementAttr attr{Element::Fire, 3};
     CHECK(attr.element == Element::Fire);

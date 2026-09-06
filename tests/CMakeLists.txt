@@ -32,3 +32,9 @@ add_executable(event_tests test_main.cpp core/event_test.cpp)
 target_link_libraries(event_tests PRIVATE treelang_core doctest)
 
 doctest_discover_tests(event_tests)
+
+add_executable(map_tests test_main.cpp map/map_test.cpp)
+
+target_link_libraries(map_tests PRIVATE treelang_core doctest)
+
+doctest_discover_tests(map_tests)
