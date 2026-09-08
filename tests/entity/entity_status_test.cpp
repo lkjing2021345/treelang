@@ -44,8 +44,6 @@ namespace
         st.get_hp() = entity::SingleStatus(hp);
         st.get_atk() = entity::SingleStatus(5);
         st.get_def() = entity::SingleStatus(3);
-        st.get_spd() = entity::SingleStatus(4);
-        st.get_san() = entity::SingleStatus(10);
         return entity::Entity(std::string(id), std::move(st));
     }
 }
@@ -235,7 +233,7 @@ TEST_CASE("status: hp zeroing transition fires EntityDiedEvent once, after chang
 TEST_CASE("status_collection: builder sets cur and tot to the given value")
 {
     entity::StatusCollection st =
-        entity::StatusCollection::create().hp(20).atk(5).def(3).spd(4).san(10).build();
+        entity::StatusCollection::create().hp(20).atk(5).def(3).build();
 
     CHECK(st.get_hp().get_cur() == 20);
     CHECK(st.get_hp().get_tot() == 20);
@@ -243,10 +241,6 @@ TEST_CASE("status_collection: builder sets cur and tot to the given value")
     CHECK(st.get_atk().get_tot() == 5);
     CHECK(st.get_def().get_cur() == 3);
     CHECK(st.get_def().get_tot() == 3);
-    CHECK(st.get_spd().get_cur() == 4);
-    CHECK(st.get_spd().get_tot() == 4);
-    CHECK(st.get_san().get_cur() == 10);
-    CHECK(st.get_san().get_tot() == 10);
 }
 
 TEST_CASE("status: each attribute wired independently with its own name")
@@ -262,18 +256,15 @@ TEST_CASE("status: each attribute wired independently with its own name")
         });
 
     auto e = make_entity(id, 20);
+    e.get_status().get_hp().sub(3);
     e.get_status().get_atk().sub(2);
     e.get_status().get_def().sub(1);
-    e.get_status().get_spd().sub(2);
-    e.get_status().get_san().sub(3);
 
-    REQUIRE(seen.size() == 4);
-    CHECK(seen[0].attr == "atk");
-    CHECK(seen[0].new_cur == 3);
-    CHECK(seen[1].attr == "def");
-    CHECK(seen[1].new_cur == 2);
-    CHECK(seen[2].attr == "spd");
+    REQUIRE(seen.size() == 3);
+    CHECK(seen[0].attr == "hp");
+    CHECK(seen[0].new_cur == 17);
+    CHECK(seen[1].attr == "atk");
+    CHECK(seen[1].new_cur == 3);
+    CHECK(seen[2].attr == "def");
     CHECK(seen[2].new_cur == 2);
-    CHECK(seen[3].attr == "san");
-    CHECK(seen[3].new_cur == 7);
 }

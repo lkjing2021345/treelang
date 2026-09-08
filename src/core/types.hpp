@@ -24,15 +24,6 @@ namespace treelang
     /** 中央初始房的列下标 */
     inline constexpr std::size_t k_center_col = k_map_size / 2;
 
-    /** 理智值范围下界 */
-    inline constexpr int k_san_min = 0;
-
-    /** 理智值范围上界 */
-    inline constexpr int k_san_max = 100;
-
-    /** S.P.E.C.I.A.L. 属性点上限 */
-    inline constexpr int k_attribute_cap = 20;
-
     /**
      * @brief 术式属性条目：元素 + 属性等级。
      */

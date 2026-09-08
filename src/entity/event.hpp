@@ -21,7 +21,7 @@ namespace treelang
 
     /**
      * @class EntityStatusChangedEvent
-     * @brief 实体某属性的 cur 值发生变化（hp/atk/def/spd/san），由状态监听器自动发布。
+     * @brief 实体某属性的 cur 值发生变化（hp/atk/def），由状态监听器自动发布。
      */
     DEFINE_EVENT_START(EntityStatusChanged, EntityEvent)
     public:
@@ -89,15 +89,6 @@ namespace treelang
         int amount = 0;
     DEFINE_EVENT_END(EntityShieldGained)
 
-    /**
-     * @class EntitySanLostEvent
-     * @brief 实体 san 值下降（原因层）。
-     */
-    DEFINE_EVENT_START(EntitySanLost, EntityEvent)
-    public:
-        std::string target;
-        int amount = 0;
-    DEFINE_EVENT_END(EntitySanLost)
 }
 
 #endif  // INCLUDE_TREELANG_ENTITY_EVENT_HPP

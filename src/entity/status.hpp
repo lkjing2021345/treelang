@@ -98,8 +98,6 @@ namespace treelang
             DEFINE_ATTRIBUTE(SingleStatus, hp)
             DEFINE_ATTRIBUTE(SingleStatus, atk)
             DEFINE_ATTRIBUTE(SingleStatus, def)
-            DEFINE_ATTRIBUTE(SingleStatus, spd)
-            DEFINE_ATTRIBUTE(SingleStatus, san)
 
         public:
             DEFAULT_CONSTRUCTOR(StatusCollection)
@@ -118,8 +116,6 @@ namespace treelang
                 wire_cur(hp, "hp");
                 wire_cur(atk, "atk");
                 wire_cur(def, "def");
-                wire_cur(spd, "spd");
-                wire_cur(san, "san");
             }
 
             void set_max_change_handler(MaxChangedHandler handler)
@@ -128,8 +124,6 @@ namespace treelang
                 wire_max(hp, "hp");
                 wire_max(atk, "atk");
                 wire_max(def, "def");
-                wire_max(spd, "spd");
-                wire_max(san, "san");
             }
 
         private:
@@ -161,8 +155,6 @@ namespace treelang
         CLASS_BUILDER_ATTRIBUTE(StatusCollection, int, hp)
         CLASS_BUILDER_ATTRIBUTE(StatusCollection, int, atk)
         CLASS_BUILDER_ATTRIBUTE(StatusCollection, int, def)
-        CLASS_BUILDER_ATTRIBUTE(StatusCollection, int, spd)
-        CLASS_BUILDER_ATTRIBUTE(StatusCollection, int, san)
         CLASS_BUILDER_END(StatusCollection)
 
     }

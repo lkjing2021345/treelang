@@ -16,7 +16,6 @@ using treelang::Element;
 using treelang::EntityDamagedEvent;
 using treelang::EntityDiedEvent;
 using treelang::EntityHealedEvent;
-using treelang::EntitySanLostEvent;
 using treelang::EntityStatusChangedEvent;
 using treelang::EventBusInstance;
 
@@ -43,14 +42,12 @@ namespace
         std::uint64_t seq = 0;
     };
 
-    entity::Entity make_entity(const char *id, int hp, int san = 10)
+    entity::Entity make_entity(const char *id, int hp)
     {
         entity::StatusCollection st;
         st.get_hp() = entity::SingleStatus(hp);
         st.get_atk() = entity::SingleStatus(5);
         st.get_def() = entity::SingleStatus(3);
-        st.get_spd() = entity::SingleStatus(4);
-        st.get_san() = entity::SingleStatus(san);
         return entity::Entity(std::string(id), std::move(st));
     }
 }
@@ -134,43 +131,6 @@ TEST_CASE("effect: heal clamps at max hp, silent when full")
     CHECK(seen.back().old_cur == 15);
     CHECK(seen.back().new_cur == 20);
     CHECK(e.get_status().get_hp().get_cur() == 20);
-}
-
-TEST_CASE("effect: lose_san clamps at zero, silent when empty")
-{
-    static const char *const id = "fx_san";
-    static std::vector<int> san_lost;
-    static std::vector<ChangedRecord> seen;
-    auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntitySanLostEvent>(
-        [](EntitySanLostEvent *e)
-        {
-            if (e->target == id)
-                san_lost.push_back(e->amount);
-        });
-    bus.subscribe<EntityStatusChangedEvent>(
-        [](EntityStatusChangedEvent *e)
-        {
-            if (e->entity_id == id)
-                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->get_sequence()});
-        });
-
-    auto e = make_entity(id, 20, 10);
-    CHECK(e.lose_san(-1) == 0);  // 负值非法输入，静默
-    CHECK(e.lose_san(3) == 3);
-    CHECK(e.lose_san(99) == 7);  // 实际只损失 7
-    CHECK(e.lose_san(1) == 0);  // 已为 0，静默
-
-    REQUIRE(san_lost.size() == 2);
-    CHECK(san_lost[0] == 3);
-    CHECK(san_lost[1] == 7);
-    REQUIRE(seen.size() == 2);
-    CHECK(seen[0].attr == "san");
-    CHECK(seen[0].old_cur == 10);
-    CHECK(seen[0].new_cur == 7);
-    CHECK(seen[1].old_cur == 7);
-    CHECK(seen[1].new_cur == 0);
-    CHECK(e.get_status().get_san().get_cur() == 0);
 }
 
 TEST_CASE("effect: lethal take_damage orders reason, changed, died")
