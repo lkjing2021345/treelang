@@ -79,4 +79,13 @@ public:                                           \
         const name &data() const noexcept { return m_data; }             \
     };
 
+#define DEFINE_EVENT_START(name, parent) \
+    class name##Event : public parent    \
+    {
+#define DEFINE_EVENT_END(name)                                                   \
+public:                                                                          \
+    std::string_view type_tag() const noexcept override { return #name "Event"; } \
+    }                                                                            \
+    ;
+
 #endif  // INCLUDE_TREELANG_CORE_MARCO_HPP
