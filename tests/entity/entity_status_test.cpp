@@ -55,11 +55,12 @@ TEST_CASE("status: set_cur fires EntityStatusChangedEvent with old/new/tot")
     static const char *const id = "st_set_cur";
     static std::vector<ChangedRecord> seen;
     auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityStatusChangedEvent>([](EntityStatusChangedEvent *e)
-                                            {
-                                                if (e->entity_id == id)
-                                                    seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
-                                            });
+    bus.subscribe<EntityStatusChangedEvent>(
+        [](EntityStatusChangedEvent *e)
+        {
+            if (e->entity_id == id)
+                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
+        });
 
     auto e = make_entity(id, 20);
     CHECK(e.get_status().get_hp().set_cur(7));
@@ -77,11 +78,12 @@ TEST_CASE("status: no-op set_cur fires nothing")
     static const char *const id = "st_noop";
     static std::vector<ChangedRecord> seen;
     auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityStatusChangedEvent>([](EntityStatusChangedEvent *e)
-                                            {
-                                                if (e->entity_id == id)
-                                                    seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
-                                            });
+    bus.subscribe<EntityStatusChangedEvent>(
+        [](EntityStatusChangedEvent *e)
+        {
+            if (e->entity_id == id)
+                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
+        });
 
     auto e = make_entity(id, 20);
     CHECK(e.get_status().get_hp().set_cur(20));  // 与当前值相同
@@ -94,11 +96,12 @@ TEST_CASE("status: invalid set_cur fires nothing")
     static const char *const id = "st_invalid";
     static std::vector<ChangedRecord> seen;
     auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityStatusChangedEvent>([](EntityStatusChangedEvent *e)
-                                            {
-                                                if (e->entity_id == id)
-                                                    seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
-                                            });
+    bus.subscribe<EntityStatusChangedEvent>(
+        [](EntityStatusChangedEvent *e)
+        {
+            if (e->entity_id == id)
+                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
+        });
 
     auto e = make_entity(id, 20);
     CHECK(!e.get_status().get_hp().set_cur(-1));
@@ -113,32 +116,33 @@ TEST_CASE("status: add/sub route through set_cur and clamp")
     static const char *const id = "st_addsub";
     static std::vector<ChangedRecord> seen;
     auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityStatusChangedEvent>([](EntityStatusChangedEvent *e)
-                                            {
-                                                if (e->entity_id == id)
-                                                    seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
-                                            });
+    bus.subscribe<EntityStatusChangedEvent>(
+        [](EntityStatusChangedEvent *e)
+        {
+            if (e->entity_id == id)
+                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
+        });
 
     auto e = make_entity(id, 20);
-    e.get_status().get_hp().sub(5);
+    CHECK(e.get_status().get_hp().sub(5) == 5);
     REQUIRE(seen.size() == 1);
     CHECK(seen.back().old_cur == 20);
     CHECK(seen.back().new_cur == 15);
 
-    e.get_status().get_hp().add(3);
+    CHECK(e.get_status().get_hp().add(3) == 3);
     REQUIRE(seen.size() == 2);
     CHECK(seen.back().old_cur == 15);
     CHECK(seen.back().new_cur == 18);
 
-    e.get_status().get_hp().add(99);  // 夹到 tot
+    CHECK(e.get_status().get_hp().add(99) == 2);  // 夹到 tot，只加 2
     REQUIRE(seen.size() == 3);
     CHECK(seen.back().old_cur == 18);
     CHECK(seen.back().new_cur == 20);
 
-    e.get_status().get_hp().add(1);  // 已满，无变化
+    CHECK(e.get_status().get_hp().add(1) == 0);  // 已满，无变化
     CHECK(seen.size() == 3);
 
-    e.get_status().get_hp().sub(99);  // 夹到 0
+    CHECK(e.get_status().get_hp().sub(99) == 20);  // 夹到 0
     REQUIRE(seen.size() == 4);
     CHECK(seen.back().old_cur == 20);
     CHECK(seen.back().new_cur == 0);
@@ -150,16 +154,18 @@ TEST_CASE("status: set_tot fires MaxChanged, clamp fires extra Changed")
     static std::vector<MaxRecord> max_seen;
     static std::vector<ChangedRecord> seen;
     auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityStatusMaxChangedEvent>([](EntityStatusMaxChangedEvent *e)
-                                               {
-                                                   if (e->entity_id == id)
-                                                       max_seen.push_back({e->attribute, e->old_tot, e->new_tot, e->cur});
-                                               });
-    bus.subscribe<EntityStatusChangedEvent>([](EntityStatusChangedEvent *e)
-                                            {
-                                                if (e->entity_id == id)
-                                                    seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
-                                            });
+    bus.subscribe<EntityStatusMaxChangedEvent>(
+        [](EntityStatusMaxChangedEvent *e)
+        {
+            if (e->entity_id == id)
+                max_seen.push_back({e->attribute, e->old_tot, e->new_tot, e->cur});
+        });
+    bus.subscribe<EntityStatusChangedEvent>(
+        [](EntityStatusChangedEvent *e)
+        {
+            if (e->entity_id == id)
+                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
+        });
 
     auto e = make_entity(id, 20);
     CHECK(e.get_status().get_hp().set_tot(10));  // cur 20 被夹到 10
@@ -192,19 +198,21 @@ TEST_CASE("status: hp zeroing transition fires EntityDiedEvent once, after chang
     static std::vector<std::uint64_t> died_seq;
     static std::vector<std::uint64_t> last_changed_seq;
     auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityStatusChangedEvent>([](EntityStatusChangedEvent *e)
-                                            {
-                                                if (e->entity_id == id)
-                                                {
-                                                    seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
-                                                    last_changed_seq.push_back(e->get_sequence());
-                                                }
-                                            });
-    bus.subscribe<EntityDiedEvent>([](EntityDiedEvent *e)
-                                   {
-                                       if (e->entity_id == id)
-                                           died_seq.push_back(e->get_sequence());
-                                   });
+    bus.subscribe<EntityStatusChangedEvent>(
+        [](EntityStatusChangedEvent *e)
+        {
+            if (e->entity_id == id)
+            {
+                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
+                last_changed_seq.push_back(e->get_sequence());
+            }
+        });
+    bus.subscribe<EntityDiedEvent>(
+        [](EntityDiedEvent *e)
+        {
+            if (e->entity_id == id)
+                died_seq.push_back(e->get_sequence());
+        });
 
     auto e = make_entity(id, 1);
     e.get_status().get_hp().sub(1);  // 1 -> 0
@@ -216,7 +224,7 @@ TEST_CASE("status: hp zeroing transition fires EntityDiedEvent once, after chang
     CHECK(died_seq[0] > last_changed_seq[0]);  // 先状态变化，后死亡
 
     e.get_status().get_hp().set_cur(1);  // 复活
-    e.get_status().get_hp().sub(99);    // 再死一次
+    e.get_status().get_hp().sub(99);     // 再死一次
     CHECK(died_seq.size() == 2);
 
     e.get_status().get_hp().sub(5);  // 已是 0，无变化，不再触发
@@ -246,11 +254,12 @@ TEST_CASE("status: each attribute wired independently with its own name")
     static const char *const id = "st_attrs";
     static std::vector<ChangedRecord> seen;
     auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityStatusChangedEvent>([](EntityStatusChangedEvent *e)
-                                            {
-                                                if (e->entity_id == id)
-                                                    seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
-                                            });
+    bus.subscribe<EntityStatusChangedEvent>(
+        [](EntityStatusChangedEvent *e)
+        {
+            if (e->entity_id == id)
+                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->tot});
+        });
 
     auto e = make_entity(id, 20);
     e.get_status().get_atk().sub(2);

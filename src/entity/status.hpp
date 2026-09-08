@@ -17,6 +17,7 @@ namespace treelang
          * @class SingleStatus
          * @brief 单个属性值（cur/tot）。所有修改路径收敛到 set_cur/set_tot，
          * 值真正变化时触发 on_change / on_max_change 回调（无变化不触发）。
+         * add/sub 返回实际变化量（受 [0, tot] 钳制，可能小于入参或为 0）。
          */
         class SingleStatus
         {
@@ -64,8 +65,18 @@ namespace treelang
                 return true;
             }
 
-            void add(int det) { set_cur(std::min(cur + det, tot)); }
-            void sub(int det) { set_cur(std::max(cur - det, 0)); }
+            int add(int det)
+            {
+                const int old = cur;
+                set_cur(std::min(cur + det, tot));
+                return cur - old;
+            }
+            int sub(int det)
+            {
+                const int old = cur;
+                set_cur(std::max(cur - det, 0));
+                return old - cur;
+            }
 
             void on_change(std::function<void(int, int, int)> cb)
             {
