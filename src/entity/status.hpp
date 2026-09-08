@@ -21,8 +21,8 @@ namespace treelang
         class SingleStatus
         {
         private:
-            int cur;
-            int tot;
+            int cur = 0;
+            int tot = 0;
             std::function<void(int, int, int)> m_on_change;      // (old_cur, cur, tot)
             std::function<void(int, int, int)> m_on_max_change;  // (old_tot, tot, cur)
 

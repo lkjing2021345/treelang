@@ -43,6 +43,7 @@ public:                                                 \
 public:                                           \
     name##Builder &attr(type val)                 \
     {                                             \
+        data.get_##attr().set_tot(val);           \
         data.get_##attr().set_cur(val);           \
         return *this;                             \
     }

@@ -224,6 +224,23 @@ TEST_CASE("status: hp zeroing transition fires EntityDiedEvent once, after chang
     CHECK(e.get_status().get_hp().get_cur() == 0);
 }
 
+TEST_CASE("status_collection: builder sets cur and tot to the given value")
+{
+    entity::StatusCollection st =
+        entity::StatusCollection::create().hp(20).atk(5).def(3).spd(4).san(10).build();
+
+    CHECK(st.get_hp().get_cur() == 20);
+    CHECK(st.get_hp().get_tot() == 20);
+    CHECK(st.get_atk().get_cur() == 5);
+    CHECK(st.get_atk().get_tot() == 5);
+    CHECK(st.get_def().get_cur() == 3);
+    CHECK(st.get_def().get_tot() == 3);
+    CHECK(st.get_spd().get_cur() == 4);
+    CHECK(st.get_spd().get_tot() == 4);
+    CHECK(st.get_san().get_cur() == 10);
+    CHECK(st.get_san().get_tot() == 10);
+}
+
 TEST_CASE("status: each attribute wired independently with its own name")
 {
     static const char *const id = "st_attrs";
