@@ -6,11 +6,14 @@
 
 #include "core/event.hpp"
 #include "core/event_bus.hpp"
+#include "core/handler.hpp"
 #include "entity/event.hpp"
 
 using treelang::Element;
 using treelang::Event;
 using treelang::EventBus;
+using treelang::Handler;
+using treelang::HandlerContext;
 using treelang::EntityDiedEvent;
 using treelang::EntityDamagedEvent;
 using treelang::EntityStatusChangedEvent;
@@ -20,7 +23,8 @@ TEST_CASE("entity_event: status changed carries old/new/tot and tag")
 {
     EventBus bus;
     const EntityStatusChangedEvent *received = nullptr;
-    bus.subscribe<EntityStatusChangedEvent>([&](EntityStatusChangedEvent *e) { received = e; });
+    auto h = bus.subscribe(Handler<EntityStatusChangedEvent>(
+        [&](HandlerContext<EntityStatusChangedEvent> &ctx) { received = &ctx.event; }));
 
     auto ev = std::make_shared<EntityStatusChangedEvent>();
     ev->entity_id = "player";
@@ -52,7 +56,8 @@ TEST_CASE("entity_event: status max changed carries old/new tot and current")
 {
     EventBus bus;
     const EntityStatusMaxChangedEvent *received = nullptr;
-    bus.subscribe<EntityStatusMaxChangedEvent>([&](EntityStatusMaxChangedEvent *e) { received = e; });
+    auto h = bus.subscribe(Handler<EntityStatusMaxChangedEvent>(
+        [&](HandlerContext<EntityStatusMaxChangedEvent> &ctx) { received = &ctx.event; }));
 
     auto ev = std::make_shared<EntityStatusMaxChangedEvent>();
     ev->entity_id = "player";
@@ -75,8 +80,10 @@ TEST_CASE("entity_event: reason event does not leak into state listeners")
     EventBus bus;
     int status_calls = 0;
     const EntityDamagedEvent *dmg = nullptr;
-    bus.subscribe<EntityStatusChangedEvent>([&](EntityStatusChangedEvent *) { ++status_calls; });
-    bus.subscribe<EntityDamagedEvent>([&](EntityDamagedEvent *e) { dmg = e; });
+    auto h1 = bus.subscribe(Handler<EntityStatusChangedEvent>(
+        [&](HandlerContext<EntityStatusChangedEvent> &) { ++status_calls; }));
+    auto h2 = bus.subscribe(Handler<EntityDamagedEvent>(
+        [&](HandlerContext<EntityDamagedEvent> &ctx) { dmg = &ctx.event; }));
 
     auto ev = std::make_shared<EntityDamagedEvent>();
     ev->source = "goblin_1";
@@ -105,11 +112,12 @@ TEST_CASE("entity_event: publishes are ordered by sequence")
     int first = -1;
     int second = -1;
     int n = 0;
-    bus.subscribe<EntityDiedEvent>([&](EntityDiedEvent *e)
-                                   {
-                                       if (n++ == 0) first = e->get_sequence();
-                                       else second = e->get_sequence();
-                                   });
+    auto h = bus.subscribe(Handler<EntityDiedEvent>(
+        [&](HandlerContext<EntityDiedEvent> &ctx)
+        {
+            if (n++ == 0) first = ctx.event.get_sequence();
+            else second = ctx.event.get_sequence();
+        }));
 
     auto a = std::make_shared<EntityDiedEvent>();
     a->entity_id = "goblin_1";

@@ -7,7 +7,8 @@
 #include <vector>
 
 #include "core/element.hpp"
-#include "core/instance.hpp"
+#include "core/event_bus.hpp"
+#include "core/handler.hpp"
 #include "entity/base.hpp"
 #include "entity/event.hpp"
 #include "entity/status.hpp"
@@ -17,7 +18,10 @@ using treelang::EntityDamagedEvent;
 using treelang::EntityDiedEvent;
 using treelang::EntityHealedEvent;
 using treelang::EntityStatusChangedEvent;
-using treelang::EventBusInstance;
+using treelang::EventBus;
+using treelang::Handler;
+using treelang::HandlerContext;
+using treelang::HandlerPriority;
 
 namespace entity = treelang::entity;
 
@@ -42,43 +46,42 @@ namespace
         std::uint64_t seq = 0;
     };
 
-    entity::Entity make_entity(const char *id, int hp)
+    entity::Entity make_entity(const char *id, int hp, EventBus &bus)
     {
         entity::StatusCollection st;
         st.get_hp() = entity::SingleStatus(hp);
         st.get_atk() = entity::SingleStatus(5);
         st.get_def() = entity::SingleStatus(3);
-        return entity::Entity(std::string(id), std::move(st));
+        return entity::Entity(std::string(id), std::move(st), bus);
     }
 }
 
 TEST_CASE("effect: take_damage publishes reason event before state event")
 {
-    static const char *const id = "fx_damage";
-    static std::vector<DamageRecord> dmg;
-    static std::vector<ChangedRecord> seen;
-    auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityDamagedEvent>(
-        [](EntityDamagedEvent *e)
+    EventBus bus;
+    std::vector<DamageRecord> dmg;
+    std::vector<ChangedRecord> seen;
+    auto dmg_watch = bus.subscribe(Handler<EntityDamagedEvent>(
+        [&](HandlerContext<EntityDamagedEvent> &ctx)
         {
-            if (e->target == id)
-                dmg.push_back(
-                    {e->source, e->target, e->amount, e->shield_absorbed, e->hp_lost,
-                     e->black_flash, e->get_sequence()});
-        });
-    bus.subscribe<EntityStatusChangedEvent>(
-        [](EntityStatusChangedEvent *e)
+            const auto &e = ctx.event;
+            dmg.push_back({e.source, e.target, e.amount, e.shield_absorbed, e.hp_lost,
+                           e.black_flash, e.get_sequence()});
+        }));
+    auto chg_watch = bus.subscribe(Handler<EntityStatusChangedEvent>(
+        [&](HandlerContext<EntityStatusChangedEvent> &ctx)
         {
-            if (e->entity_id == id)
-                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->get_sequence()});
-        });
+            seen.push_back(
+                {ctx.event.attribute, ctx.event.old_cur, ctx.event.new_cur,
+                 ctx.event.get_sequence()});
+        }));
 
-    auto e = make_entity(id, 20);
+    auto e = make_entity("fx_damage", 20, bus);
     CHECK(e.take_damage("goblin_1", 8, 3, 5, Element::Fire, true) == 5);
 
     REQUIRE(dmg.size() == 1);
     CHECK(dmg.back().source == "goblin_1");
-    CHECK(dmg.back().target == id);
+    CHECK(dmg.back().target == "fx_damage");
     CHECK(dmg.back().amount == 8);
     CHECK(dmg.back().shield_absorbed == 3);
     CHECK(dmg.back().hp_lost == 5);
@@ -99,24 +102,20 @@ TEST_CASE("effect: take_damage publishes reason event before state event")
 
 TEST_CASE("effect: heal clamps at max hp, silent when full")
 {
-    static const char *const id = "fx_heal";
-    static std::vector<int> healed;
-    static std::vector<ChangedRecord> seen;
-    auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityHealedEvent>(
-        [](EntityHealedEvent *e)
+    EventBus bus;
+    std::vector<int> healed;
+    std::vector<ChangedRecord> seen;
+    auto heal_watch = bus.subscribe(Handler<EntityHealedEvent>(
+        [&](HandlerContext<EntityHealedEvent> &ctx) { healed.push_back(ctx.event.amount); }));
+    auto chg_watch = bus.subscribe(Handler<EntityStatusChangedEvent>(
+        [&](HandlerContext<EntityStatusChangedEvent> &ctx)
         {
-            if (e->target == id)
-                healed.push_back(e->amount);
-        });
-    bus.subscribe<EntityStatusChangedEvent>(
-        [](EntityStatusChangedEvent *e)
-        {
-            if (e->entity_id == id)
-                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->get_sequence()});
-        });
+            seen.push_back(
+                {ctx.event.attribute, ctx.event.old_cur, ctx.event.new_cur,
+                 ctx.event.get_sequence()});
+        }));
 
-    auto e = make_entity(id, 20);
+    auto e = make_entity("fx_heal", 20, bus);
     CHECK(e.heal(-1) == 0);  // 负值非法输入，静默
     CHECK(e.heal(5) == 0);  // 已满，静默
     CHECK(healed.empty());
@@ -135,33 +134,28 @@ TEST_CASE("effect: heal clamps at max hp, silent when full")
 
 TEST_CASE("effect: lethal take_damage orders reason, changed, died")
 {
-    static const char *const id = "fx_lethal";
-    static std::vector<DamageRecord> dmg;
-    static std::vector<ChangedRecord> seen;
-    static std::vector<std::uint64_t> died_seq;
-    auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityDamagedEvent>(
-        [](EntityDamagedEvent *e)
+    EventBus bus;
+    std::vector<DamageRecord> dmg;
+    std::vector<ChangedRecord> seen;
+    std::vector<std::uint64_t> died_seq;
+    auto dmg_watch = bus.subscribe(Handler<EntityDamagedEvent>(
+        [&](HandlerContext<EntityDamagedEvent> &ctx)
         {
-            if (e->target == id)
-                dmg.push_back(
-                    {e->source, e->target, e->amount, e->shield_absorbed, e->hp_lost,
-                     e->black_flash, e->get_sequence()});
-        });
-    bus.subscribe<EntityStatusChangedEvent>(
-        [](EntityStatusChangedEvent *e)
+            const auto &e = ctx.event;
+            dmg.push_back({e.source, e.target, e.amount, e.shield_absorbed, e.hp_lost,
+                           e.black_flash, e.get_sequence()});
+        }));
+    auto chg_watch = bus.subscribe(Handler<EntityStatusChangedEvent>(
+        [&](HandlerContext<EntityStatusChangedEvent> &ctx)
         {
-            if (e->entity_id == id)
-                seen.push_back({e->attribute, e->old_cur, e->new_cur, e->get_sequence()});
-        });
-    bus.subscribe<EntityDiedEvent>(
-        [](EntityDiedEvent *e)
-        {
-            if (e->entity_id == id)
-                died_seq.push_back(e->get_sequence());
-        });
+            seen.push_back(
+                {ctx.event.attribute, ctx.event.old_cur, ctx.event.new_cur,
+                 ctx.event.get_sequence()});
+        }));
+    auto died_watch = bus.subscribe(Handler<EntityDiedEvent>(
+        [&](HandlerContext<EntityDiedEvent> &ctx) { died_seq.push_back(ctx.event.get_sequence()); }));
 
-    auto e = make_entity(id, 3);
+    auto e = make_entity("fx_lethal", 3, bus);
     CHECK(e.take_damage("boss", 5, 0, 5, Element::Water, false) == 3);  // 3 -> 0，超杀只记 3
 
     REQUIRE(dmg.size() == 1);
@@ -175,38 +169,40 @@ TEST_CASE("effect: lethal take_damage orders reason, changed, died")
 
 TEST_CASE("effect: thorns-style logic binds to damage event (33% reflect)")
 {
-    static const char *const thorns_id = "fx_thorns";
-    static const char *const atk_id = "fx_thorns_atk";
-    static std::vector<int> atk_hp_lost;
-    static entity::Entity *hunter = nullptr;
+    EventBus bus;
+    std::vector<int> atk_hp_lost;
 
-    auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EntityDamagedEvent>(
-        [](EntityDamagedEvent *e)
+    auto beetle = make_entity("fx_thorns", 20, bus);
+    auto attacker = make_entity("fx_thorns_atk", 30, bus);
+
+    // 关注点一：记录 attacker 受到的伤害
+    auto log_watch = bus.subscribe(Handler<EntityDamagedEvent>(
+        [&](const EntityDamagedEvent &e) { return e.target == attacker.get_id(); },
+        [&](HandlerContext<EntityDamagedEvent> &ctx) { atk_hp_lost.push_back(ctx.event.hp_lost); }));
+
+    // 关注点二：荆棘之鳞——独立 handler，只关心「自己」受伤，只做反弹一件事。
+    // 反弹伤害经 take_damage 再发布 EntityDamagedEvent（重入分发），
+    // 上面第一个 handler 负责把它记下来。
+    auto thorns = bus.subscribe(Handler<EntityDamagedEvent>(
+        [&](const EntityDamagedEvent &e) { return e.target == beetle.get_id(); },
+        [&](HandlerContext<EntityDamagedEvent> &ctx)
         {
-            if (e->target == atk_id)
-                atk_hp_lost.push_back(e->hp_lost);
-        });
-    // 荆棘之鳞：本实体受伤时反弹 33%（向下取整）。hunter 仅在 target 命中时解引用，
-    // 其他用例不会发布 target 为 fx_thorns 的 Damage 事件，故用例结束后不悬垂。
-    bus.subscribe<EntityDamagedEvent>(
-        [](EntityDamagedEvent *e)
-        {
-            if (e->target != thorns_id)
-                return;
-            const int back = e->amount * 33 / 100;
+            const int back = ctx.event.amount * 33 / 100;
             if (back > 0)
-                hunter->take_damage(thorns_id, back, 0, back, std::nullopt, false);
-        });
+                attacker.take_damage(beetle.get_id(), back, 0, back, std::nullopt, false);
+        },
+        HandlerPriority::Last));
 
-    auto beetle = make_entity(thorns_id, 20);
-    auto attacker = make_entity(atk_id, 30);
-    hunter = &attacker;
-
-    beetle.take_damage(atk_id, 12, 0, 12, std::nullopt, false);
+    beetle.take_damage(attacker.get_id(), 12, 0, 12, std::nullopt, false);
 
     REQUIRE(atk_hp_lost.size() == 1);
     CHECK(atk_hp_lost.back() == 3);  // floor(12 * 33%)
     CHECK(attacker.get_status().get_hp().get_cur() == 27);
     CHECK(beetle.get_status().get_hp().get_cur() == 8);
+
+    // 句柄退订后，反弹不再发生
+    thorns.reset();
+    beetle.take_damage(attacker.get_id(), 10, 0, 10, std::nullopt, false);
+    CHECK(atk_hp_lost.size() == 1);
+    CHECK(attacker.get_status().get_hp().get_cur() == 27);
 }

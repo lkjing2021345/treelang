@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "core/element.hpp"
-#include "core/instance.hpp"
+#include "core/event_bus.hpp"
 #include "core/marco.hpp"
 #include "entity/event.hpp"
 #include "entity/status.hpp"
@@ -18,19 +18,22 @@ namespace treelang
     {
         /**
          * @class Entity
-         * @brief 构造时自动绑定状态监听：属性 cur/tot 变化经 EventBusInstance
+         * @brief 构造时自动绑定状态监听：属性 cur/tot 变化经注入的 EventBus
          * 发布 EntityStatusChangedEvent / EntityStatusMaxChangedEvent；
          * hp 降为 0 时追加发布 EntityDiedEvent。
+         * @note 事件总线须比实体存活更久（实体析构不发布事件，
+         *       但存活期间的状态变化都会发布到该总线）。
          */
         class Entity
         {
         private:
             std::string id;
             DEFINE_ATTRIBUTE(StatusCollection, status)
+            EventBus *bus;
 
         public:
-            Entity(std::string eid, StatusCollection stus) :
-                id(std::move(eid)), status(std::move(stus))
+            Entity(std::string eid, StatusCollection stus, EventBus &injected_bus) :
+                id(std::move(eid)), status(std::move(stus)), bus(&injected_bus)
             {
                 bind_status_events();
             }
@@ -59,7 +62,7 @@ namespace treelang
                 ev->hp_lost = hp_lost;
                 ev->element = element;
                 ev->black_flash = black_flash;
-                EventBusInstance::instance().data().publish(ev);
+                bus->publish(ev);
 
                 return status.get_hp().sub(hp_lost);
             }
@@ -79,7 +82,7 @@ namespace treelang
                 auto ev = std::make_shared<EntityHealedEvent>();
                 ev->target = id;
                 ev->amount = real;
-                EventBusInstance::instance().data().publish(ev);
+                bus->publish(ev);
                 return real;
             }
 
@@ -87,8 +90,9 @@ namespace treelang
             void bind_status_events()
             {
                 const std::string entity_id = id;
+                EventBus *bus = this->bus;
                 status.set_change_handler(
-                    [entity_id](std::string_view attr, int old_cur, int cur, int tot)
+                    [entity_id, bus](std::string_view attr, int old_cur, int cur, int tot)
                     {
                         auto ev = std::make_shared<EntityStatusChangedEvent>();
                         ev->entity_id = entity_id;
@@ -96,17 +100,18 @@ namespace treelang
                         ev->old_cur = old_cur;
                         ev->new_cur = cur;
                         ev->tot = tot;
-                        EventBusInstance::instance().data().publish(ev);
+                        bus->publish(ev);
 
                         if (attr == "hp" && old_cur > 0 && cur <= 0)
                         {
                             auto died = std::make_shared<EntityDiedEvent>();
                             died->entity_id = entity_id;
-                            EventBusInstance::instance().data().publish(died);
+                            bus->publish(died);
                         }
                     });
                 status.set_max_change_handler(
-                    [entity_id](std::string_view attr, int old_tot, int new_tot, int cur)
+                    [entity_id, bus](
+                        std::string_view attr, int old_tot, int new_tot, int cur)
                     {
                         auto ev = std::make_shared<EntityStatusMaxChangedEvent>();
                         ev->entity_id = entity_id;
@@ -114,7 +119,7 @@ namespace treelang
                         ev->old_tot = old_tot;
                         ev->new_tot = new_tot;
                         ev->cur = cur;
-                        EventBusInstance::instance().data().publish(ev);
+                        bus->publish(ev);
                     });
             }
         };

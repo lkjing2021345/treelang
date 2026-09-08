@@ -8,11 +8,12 @@
 
 #include "core/event.hpp"
 #include "core/event_bus.hpp"
-#include "core/instance.hpp"
+#include "core/handler.hpp"
 
 using treelang::Event;
 using treelang::EventBus;
-using treelang::EventBusInstance;
+using treelang::Handler;
+using treelang::HandlerContext;
 
 namespace
 {
@@ -64,10 +65,13 @@ TEST_CASE("event_bus: publish invokes matching listener with same object")
     bool called = false;
     const SpellCastEvent *received = nullptr;
 
-    bus.subscribe<SpellCastEvent>([&](SpellCastEvent *event) {
-        called = true;
-        received = event;
-    });
+    // 句柄为 RAII：必须保活到断言结束，临时句柄会在语句末尾即退订
+    auto h = bus.subscribe(Handler<SpellCastEvent>(
+        [&](HandlerContext<SpellCastEvent> &ctx)
+        {
+            called = true;
+            received = &ctx.event;
+        }));
 
     auto event = std::make_shared<SpellCastEvent>();
     event->spell_id = "fireball";
@@ -85,8 +89,10 @@ TEST_CASE("event_bus: exact type dispatch, no cross-type delivery")
     int cast_calls = 0;
     int hit_calls = 0;
 
-    bus.subscribe<SpellCastEvent>([&](SpellCastEvent *) { ++cast_calls; });
-    bus.subscribe<EnemyHitEvent>([&](EnemyHitEvent *) { ++hit_calls; });
+    auto cast_h = bus.subscribe(Handler<SpellCastEvent>(
+        [&](HandlerContext<SpellCastEvent> &) { ++cast_calls; }));
+    auto hit_h = bus.subscribe(Handler<EnemyHitEvent>(
+        [&](HandlerContext<EnemyHitEvent> &) { ++hit_calls; }));
 
     bus.publish(std::make_shared<SpellCastEvent>());
     CHECK(cast_calls == 1);
@@ -101,18 +107,18 @@ TEST_CASE("event_bus: subscribing to base does not receive derived events")
 {
     EventBus bus;
     int base_calls = 0;
-    bus.subscribe<Event>([&](Event *) { ++base_calls; });
+    auto h = bus.subscribe(Handler<Event>([&](HandlerContext<Event> &) { ++base_calls; }));
 
     bus.publish(std::make_shared<SpellCastEvent>());
     CHECK(base_calls == 0);  // 精确类型分发，基类订阅不命中细化事件
 }
 
-TEST_CASE("event_bus: multiple listeners all invoked")
+TEST_CASE("event_bus: multiple handlers all invoked")
 {
     EventBus bus;
     int count = 0;
-    bus.subscribe<SpellCastEvent>([&](SpellCastEvent *) { ++count; });
-    bus.subscribe<SpellCastEvent>([&](SpellCastEvent *) { ++count; });
+    auto h1 = bus.subscribe(Handler<SpellCastEvent>([&](HandlerContext<SpellCastEvent> &) { ++count; }));
+    auto h2 = bus.subscribe(Handler<SpellCastEvent>([&](HandlerContext<SpellCastEvent> &) { ++count; }));
 
     bus.publish(std::make_shared<SpellCastEvent>());
     CHECK(count == 2);
@@ -129,8 +135,10 @@ TEST_CASE("event_bus: sequence increments globally across types")
 {
     EventBus bus;
     std::vector<std::uint64_t> seen;
-    bus.subscribe<SpellCastEvent>([&](SpellCastEvent *e) { seen.push_back(e->get_sequence()); });
-    bus.subscribe<EnemyHitEvent>([&](EnemyHitEvent *e) { seen.push_back(e->get_sequence()); });
+    auto cast_h = bus.subscribe(Handler<SpellCastEvent>(
+        [&](HandlerContext<SpellCastEvent> &ctx) { seen.push_back(ctx.event.get_sequence()); }));
+    auto hit_h = bus.subscribe(Handler<EnemyHitEvent>(
+        [&](HandlerContext<EnemyHitEvent> &ctx) { seen.push_back(ctx.event.get_sequence()); }));
 
     bus.publish(std::make_shared<SpellCastEvent>());
     bus.publish(std::make_shared<EnemyHitEvent>());
@@ -148,7 +156,7 @@ TEST_CASE("event_bus: independent buses have independent counters and listeners"
     EventBus a;
     EventBus b;
     int a_calls = 0;
-    a.subscribe<SpellCastEvent>([&](SpellCastEvent *) { ++a_calls; });
+    auto h = a.subscribe(Handler<SpellCastEvent>([&](HandlerContext<SpellCastEvent> &) { ++a_calls; }));
 
     a.publish(std::make_shared<SpellCastEvent>());
     b.publish(std::make_shared<SpellCastEvent>());
@@ -156,29 +164,4 @@ TEST_CASE("event_bus: independent buses have independent counters and listeners"
     CHECK(a_calls == 1);  // b 的发布不影响 a 的监听者
     CHECK(a.sequence() == 1);
     CHECK(b.sequence() == 1);
-}
-
-TEST_CASE("instance: EventBusInstance is a singleton")
-{
-    auto &a = EventBusInstance::instance();
-    auto &b = EventBusInstance::instance();
-    CHECK(&a == &b);
-    CHECK(&a.data() == &b.data());
-}
-
-TEST_CASE("instance: publish/subscribe through singleton works")
-{
-    static int calls = 0;
-    auto &bus = EventBusInstance::instance().data();
-    bus.subscribe<EnemyHitEvent>([&](EnemyHitEvent *e) {
-        ++calls;
-        CHECK(e->damage == 5);
-    });
-
-    auto hit = std::make_shared<EnemyHitEvent>();
-    hit->damage = 5;
-    bus.publish(hit);
-
-    CHECK(calls == 1);
-    CHECK(bus.sequence() >= 1);  // 单例计数器持续累加
 }

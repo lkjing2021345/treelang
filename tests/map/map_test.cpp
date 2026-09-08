@@ -6,7 +6,8 @@
 
 #include <doctest/doctest.h>
 
-#include "core/instance.hpp"
+#include "core/event_bus.hpp"
+#include "core/handler.hpp"
 #include "core/rng.hpp"
 #include "core/types.hpp"
 #include "map/event.hpp"
@@ -188,14 +189,14 @@ TEST_CASE("map: same seed reproduces the identical floor")
 
 TEST_CASE("map: room events flow through the event bus")
 {
-    auto &bus = treelang::EventBusInstance::instance().data();
+    treelang::EventBus bus;
     bool entered = false;
-    bus.subscribe<treelang::RoomEnteredEvent>(
-        [&](treelang::RoomEnteredEvent *e)
+    auto h = bus.subscribe(treelang::Handler<treelang::RoomEnteredEvent>(
+        [&](treelang::HandlerContext<treelang::RoomEnteredEvent> &ctx)
         {
             entered = true;
-            CHECK(e->type == RoomType::Elite);
-        });
+            CHECK(ctx.event.type == RoomType::Elite);
+        }));
 
     auto event = std::make_shared<treelang::RoomEnteredEvent>();
     event->pos = make_point(1, 2);
