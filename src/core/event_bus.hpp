@@ -53,7 +53,7 @@ namespace treelang
             auto it = listeners.find(typeid(U));
             if (it == listeners.end())
                 return;
-            for (auto &listener : it->second) listener(event);
+            for (auto listener : it->second) listener(event);
         }
     };
 
